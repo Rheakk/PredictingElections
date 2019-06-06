@@ -9,9 +9,12 @@ trend.build_payload(kw_list, cat=0, timeframe='2018-01-01 2018-11-30', geo='', g
 
 # Interest Over Time
 interest_over_time_df = trend.interest_over_time()
-print(interest_over_time_df)
+#print(interest_over_time_df)
+
+
 
 print()
+
 
 # print (trends.suggestions("trump"))
 
@@ -19,7 +22,7 @@ print()
 
 # loading and printing election data
 edata = pd.read_csv("/Users/Rhea/Desktop/senate_election_data")
-print(edata)
+#print(edata)
 
 print()
 
@@ -49,7 +52,53 @@ def extractWinners(start, end):
             if (i != end):
                 topVotes = edata.at[i, "candidatevotes"]
 
+    for winner in winners:
+        print (winner)
+
     return winners
 
-extractWinners(3269, 3420)
+
+# extract all midterm election candidates per state
+def extractCandidates(start, end):
+
+    states = {}
+    cands = []
+    curState = edata.at[start, "state"]
+
+    for i in range(start, end + 1):
+
+        nextState = edata.at[i, "state"]
+        cand = edata.at[i, "candidate"]
+
+        states[nextState] = []
+
+        if (curState == nextState):
+            cands.append(cand)
+
+        else:
+            states[curState] = cands
+            states[nextState] = []
+            cands = []
+            cands.append(cand)
+            curState = nextState
+
+    return states
+
+# create dataframe given list of search terms
+def createDf(searchTerms):
+
+    trend.build_payload(searchTerms, cat=0, timeframe='2018-01-01 2018-11-30', geo='', gprop='')
+    iot_df = trend.interest_over_time()
+    return iot_df
+
+# creating list of dataframes for each state's midterm gtrends data
+searchVolData = []
+allRaces = extractCandidates(3269, 3420)
+for race in allRaces:
+    searchVolData.append(createDf(allRaces[race]))
+for dataframe in searchVolData:
+    print(dataframe)
+
+#extractWinners(3269, 3420)
+print()
 
