@@ -5,16 +5,14 @@ trend = TrendReq(hl='en-US', tz=360)
 
 # build payload
 kw_list = ["dianne feinstein", "kevin de leon"]
-trend.build_payload(kw_list, cat=0, timeframe='2018-01-01 2018-11-30', geo='', gprop='')
+trend.build_payload(kw_list, cat=0, timeframe='2018-10-06 2018-11-06', geo='', gprop='')
 
 # Interest Over Time
 interest_over_time_df = trend.interest_over_time()
-#print(interest_over_time_df)
-
-
+# print(interest_over_time_df)
+# print("*****************")
 
 print()
-
 
 # print (trends.suggestions("trump"))
 
@@ -29,10 +27,11 @@ print()
 # extract winners from each state senate election
 def extractWinners(start, end):
 
+    winners_df = pd.DataFrame(columns=["state", "winner_index"])
+
     winners = []
-    winner = edata.at[start, "candidate"]
-    curState = edata.at[start, "state"]
-    topVotes = edata.at[start, "candidatevotes"]
+    winner = None
+    curState = None
 
     for i in range(start, end + 1):
         nextState = edata.at[i, "state"]
@@ -43,61 +42,85 @@ def extractWinners(start, end):
 
             if curCandVotes > topVotes:
                 topVotes = curCandVotes
-                winner = edata.at[i, "candidate"]
+                winner = i
 
         else:
-            winners.append(winner)
+            if winner is not None:
+                dict = {curState : winner}
+                winners.append(dict)
             curState = nextState
-            winner = edata.at[i, "candidate"]
-            if (i != end):
-                topVotes = edata.at[i, "candidatevotes"]
+            winner = i
+            topVotes = edata.at[i, "candidatevotes"]
 
-    for winner in winners:
-        print (winner)
+    winners.append({curState : winner})
+    print(winners)
+    print(len(winners))
+
+    for i in range(0,len(winners)):
+        winners_df.loc[i] = [winners[i].keys()] + [winners[i].values()]
+    print(winners_df)
+
+#    for winner in winners:
+#        print (edata.iloc[winner])
+#        print ("------------")
 
     return winners
 
+extractWinners(3269, 3420)
+print()
 
 # extract all midterm election candidates per state
 def extractCandidates(start, end):
 
     states = {}
-    cands = []
+    cands = set()
     curState = edata.at[start, "state"]
 
     for i in range(start, end + 1):
 
         nextState = edata.at[i, "state"]
-        cand = edata.at[i, "candidate"]
-
-        states[nextState] = []
+        cand = str(edata.at[i, "candidate"]).lower()
 
         if (curState == nextState):
-            cands.append(cand)
+            if (cand not in cands):
+                cands.add(cand)
 
         else:
-            states[curState] = cands
-            states[nextState] = []
-            cands = []
-            cands.append(cand)
+            states[curState.lower()] = cands
+            states[nextState.lower()] = []
+            cands = set()
+            if cand not in cands:
+                cands.add(cand)
             curState = nextState
 
+    states[curState.lower()] = cands
+    for state in states:
+        print(state, states[state])
     return states
+
+# extractCandidates(3269, 3420)
 
 # create dataframe given list of search terms
 def createDf(searchTerms):
 
-    trend.build_payload(searchTerms, cat=0, timeframe='2018-01-01 2018-11-30', geo='', gprop='')
+    trend.build_payload(searchTerms, cat=0, timeframe='2018-10-06 2018-11-06', geo='', gprop='')
     iot_df = trend.interest_over_time()
+    pd.set_option('display.max_columns', 10)
     return iot_df
 
+state_races = extractCandidates(3269, 3420)
+list = []
+
+print(createDf(state_races["wisconsin"]))
+# print(createDf(state_races["iowa"]))
+
 # creating list of dataframes for each state's midterm gtrends data
-searchVolData = []
-allRaces = extractCandidates(3269, 3420)
-for race in allRaces:
-    searchVolData.append(createDf(allRaces[race]))
-for dataframe in searchVolData:
-    print(dataframe)
+# searchVolData = []
+# allRaces = extractCandidates(3269, 3420)
+# for race in allRaces:
+#     searchVolData.append(createDf(allRaces[race]))
+# for dataframe in searchVolData:
+#     print(dataframe)
 
 #extractWinners(3269, 3420)
 print()
