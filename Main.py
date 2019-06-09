@@ -103,7 +103,7 @@ def extractCandidates(start, end):
 # create dataframe given list of search terms
 def createDf(searchTerms):
 
-    trend.build_payload(searchTerms, cat=0, timeframe='2018-10-06 2018-11-06', geo='', gprop='')
+    trend.build_payload(searchTerms, cat=0, timeframe='2018-10-06 2018-11-06', geo='US', gprop='')
     iot_df = trend.interest_over_time()
     pd.set_option('display.max_columns', 10)
     return iot_df
