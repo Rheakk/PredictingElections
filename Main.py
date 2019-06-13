@@ -37,53 +37,124 @@ def makeWinnersDf(data):
 
     all_states = makeStateDFs(data)
 
-    winners_df = pd.DataFrame(columns = ['state', 'candidate_idx', 'name'])
+    winners_df = pd.DataFrame(columns = ['state', 'name'])
     i = 0
 
     for state in all_states:
         winner = all_states[state]['candidatevotes'].idxmax()
-        winners_df.loc[i] = [state.lower()] + [winner] + [all_states[state].at[winner, 'candidate']]
+        winners_df.loc[i] = [state.lower()] + [str(all_states[state].at[winner, 'candidate']).lower()]
         i=i+1
 
     return winners_df
 
 
 
-def getMostSearched(data):
+def getSearchData(data):
 
     state_races = makeStateDFs(data)
+    google_dfs = {}
 
-    for state in state_races:
+    for state in state_races.keys():
 
-        searchVols = {}
         state_df = state_races[state]
         state_po = str(state_df.at[0, 'state_po'])
         candidates = state_races[state]['candidate'].tolist()
-        for i in range(0, len(candidates)):
-           candidates[i] = str(candidates[i]).lower()
-        state_google_df = create_gtrends_df(candidates, state_po)
-        columns = list(state_google_df)
+
+        # will have to come up with more encompassing code for larger lists...
+        if len(candidates) > 5:
+
+            tempDfs = []
+            cands1 = []
+            cands2 = []
+
+            logging.debug ("doing first dataframe")
+            for i in range(0, 5):
+                cands1.append(str(candidates[i]).lower())
+
+            google_df1 = create_gtrends_df(cands1, state_po)
+            tempDfs.append(google_df1)
+
+            logging.debug ("doing second dataframe")
+            for j in range(5, len(candidates)):
+                cands2.append(str(candidates[j]).lower())
+
+            google_df2 = create_gtrends_df(cands2, state_po)
+            tempDfs.append(google_df2)
+
+            state_google_df = pd.concat(tempDfs, sort=True)
+
+        else:
+
+            for i in range(0, len(candidates)):
+                candidates[i] = str(candidates[i]).lower()
+
+            state_google_df = create_gtrends_df(candidates, state_po)
+
+        google_dfs[state] = state_google_df
+
+    return google_dfs
+
+def getHighestSearched(state_dfs):
+
+    highestSearched = {}
+    mostSearched_df = pd.DataFrame(columns = ['state', 'name'])
+    count = 0
+    for state_df in state_dfs:
+        current_df = state_dfs[state_df]
+        searchVols = {}
+        columns = list(current_df)
+        columns = cleanUp(columns)
 
         for i in columns:
-                total = state_google_df[i].sum()
-                searchVols[i] = total
+            total = current_df[i].sum()
+            searchVols[i] = total
 
-        print(searchVols)
+        topCand = getMostSearchedCand(searchVols)
+        mostSearched_df.loc[count] = [state_df.lower()] + [topCand]
+        count = count + 1
 
+    return mostSearched_df
+
+
+def getMostSearchedCand(dict):
+
+    candidate = next(iter(dict.keys()))
+    largest = dict[candidate]
+
+    for name in dict.keys():
+        if dict[name] > largest:
+            largest = dict[name]
+            candidate = name
+
+    # print(candidate, largest)
+
+    return candidate
+
+def cleanUp(list):
+    if 'nan' in list:
+        list.remove('nan')
+    if 'isPartial' in list:
+        list.remove('isPartial')
+    if 'others' in list:
+        list.remove('others')
+    return list
 
 def main():
 
     #logging.getLogger().setLevel(logging.INFO)
-    # logging.getLogger().setLevel(logging.DEBUG)
+    logging.getLogger().setLevel(logging.DEBUG)
 
     # loading election data
     edata = pd.read_csv("/Users/Rhea/Desktop/senate_election_data")
 
     data2018 = edata.loc[edata['year'] == 2018]
-    MichiganData = edata.loc[(edata['year'] == 2018) & (edata['state'] == 'Michigan')]
-    ConnecticutData = edata.loc[(edata['year'] == 2018) & (edata['state'] == 'Connecticut')]
 
-    getMostSearched(data2018)
+    searchVolData = getSearchData(data2018)
+    # highestSearched = getHighestSearched(searchVolData)
+    # winners = makeWinnersDf(data2018)
+    # comparison_df = pd.merge(left=highestSearched, right=winners)
+    # print(comparison_df)
+
 
 main()
 
