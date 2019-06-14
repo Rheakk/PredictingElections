@@ -1,6 +1,5 @@
 from pytrends.request import TrendReq
 import pandas as pd
-import numpy as np
 import logging
 
 trend = TrendReq(hl='en-US', tz=360)
@@ -182,8 +181,8 @@ def main():
 
     data2018 = edata.loc[edata['year'] == 2018]
 
-    final_df = createComparison(data2018)
-    final_df = identifyMatches(final_df, 'winner', 'highest_searched')
+    compare_df = createComparison(data2018)
+    final_df = identifyMatches(compare_df, 'winner', 'highest_searched')
     print(final_df)
 
 
