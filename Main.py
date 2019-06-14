@@ -1,5 +1,6 @@
 from pytrends.request import TrendReq
 import pandas as pd
+import numpy as np
 import logging
 
 trend = TrendReq(hl='en-US', tz=360)
@@ -37,7 +38,7 @@ def makeWinnersDf(data):
 
     all_states = makeStateDFs(data)
 
-    winners_df = pd.DataFrame(columns = ['state', 'name'])
+    winners_df = pd.DataFrame(columns = ['state', 'winner'])
     i = 0
 
     for state in all_states:
@@ -94,13 +95,13 @@ def getSearchData(data):
 
     return google_dfs
 
+
+
 def getHighestSearched(state_dfs):
 
     highestSearched = {}
-    mostSearched_df = pd.DataFrame(columns = ['state', 'name'])
-    count = 0
-    for state_df in state_dfs:
-        current_df = state_dfs[state_df]
+    for state in state_dfs:
+        current_df = state_dfs[state]
         searchVols = {}
         columns = list(current_df)
         columns = cleanUp(columns)
@@ -110,10 +111,10 @@ def getHighestSearched(state_dfs):
             searchVols[i] = total
 
         topCand = getMostSearchedCand(searchVols)
-        mostSearched_df.loc[count] = [state_df.lower()] + [topCand]
-        count = count + 1
+        highestSearched[state.lower()] = topCand
 
-    return mostSearched_df
+    return highestSearched
+
 
 
 def getMostSearchedCand(dict):
@@ -130,7 +131,10 @@ def getMostSearchedCand(dict):
 
     return candidate
 
+
+
 def cleanUp(list):
+
     if 'nan' in list:
         list.remove('nan')
     if 'isPartial' in list:
@@ -139,21 +143,48 @@ def cleanUp(list):
         list.remove('others')
     return list
 
+
+
+def createComparison(data):
+
+    searchVolData = getSearchData(data)
+    highestSearched = getHighestSearched(searchVolData)
+    comparison_df = makeWinnersDf(data)
+    comparison_df["highest_searched"] = ''
+
+    for i in range(0, len(comparison_df.index)):
+        for state in highestSearched.keys():
+            if comparison_df.at[i, 'state'] == str(state):
+                comparison_df.at[i, 'highest_searched'] = highestSearched[state]
+
+    return comparison_df
+
+def identifyMatches(df, col1, col2):
+
+    df['is_a_match'] = ''
+
+    for i in range(0, len(df.index)):
+        if df.at[i, col1] == df.at[i, col2]:
+            df.at[i, 'is_a_match'] = 'Y'
+        else:
+            df.at[i, 'is_a_match'] = 'N'
+
+    return df
+
+
 def main():
 
     #logging.getLogger().setLevel(logging.INFO)
-    logging.getLogger().setLevel(logging.DEBUG)
+    #logging.getLogger().setLevel(logging.DEBUG)
 
     # loading election data
     edata = pd.read_csv("/Users/Rhea/Desktop/senate_election_data")
 
     data2018 = edata.loc[edata['year'] == 2018]
 
-    searchVolData = getSearchData(data2018)
-    # highestSearched = getHighestSearched(searchVolData)
-    # winners = makeWinnersDf(data2018)
-    # comparison_df = pd.merge(left=highestSearched, right=winners)
-    # print(comparison_df)
+    final_df = createComparison(data2018)
+    final_df = identifyMatches(final_df, 'winner', 'highest_searched')
+    print(final_df)
 
 
 main()
