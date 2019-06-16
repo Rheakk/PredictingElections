@@ -1,7 +1,7 @@
 import logging
 from pytrends.request import TrendReq
 import pandas as pd
-from getData import fetchSenateElection
+from electionData import fetchSenateElection
 
 # extract winners from each state senate election
 def extractWinners(edata, start, end):
