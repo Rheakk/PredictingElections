@@ -4,7 +4,7 @@
 
     module to manage senate election data
 """
-from getData import saveUrl
+from getData import getUrlPd, pdToSql
 import logging
 
 
@@ -26,12 +26,22 @@ def fetchSenateElection ():
 
     # the download comes down as a tab delimited file, so \t tells pandas.read_csv that the file is a
     # a tab delimited file.
-    return saveUrl  (url, electionDataFile, sep='\t')
+    df = getUrlPd (url, electionDataFile, sep='\t')
+
+    # save the data to a sql db
+    dbString = "postgres://rhea@localhost/research"
+
+    pdToSql (df, "state_senate", dbString)
+
+    return df
 
 
 
 if __name__ == "__main__":
 
-    logging.getLogger().setLevel(logging.DEBUG)
+    logging.basicConfig (
+        format='%(asctime)s %(name)s:%(lineno)d %(levelname)s %(message)s',
+        level=logging.DEBUG
+    )
 
     fetchSenateElection ()

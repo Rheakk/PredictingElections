@@ -52,29 +52,24 @@ def getUrlPd (url, outPath, sep=','):
 
     return data
 
-def fetchSenateElection ():
-    """
-        get senate election data using fetchData
-    :return: pandas series with loaded data from the url file
-    """
+def pdToSql (df, table, dbString):
+    '''
+    save pandas dataFrame to an sql db table
 
-    # Url obtained from
-    # https://dataverse.harvard.edu/file.xhtml?persistentId=doi:10.7910/DVN/PEJ5QU/XXQCIK&version=4.0
-    # and then go down and look for the Download URL section. this link can be found there.
-    #
-    url="https://dataverse.harvard.edu/api/access/datafile/:persistentId?persistentId=doi:10.7910/DVN/PEJ5QU/XXQCIK"
+    :param df: pandas data frame to be saved as a SQL table
+    :param table: table name where to save the data in
+    :param dbString: sql engine db string.
+    :return: True if save successful else returns False
+    '''
 
-    # output file where the downloaded data will be saved
-    senate_election_file = "data/senate_election_data.tab"
+    import sqlalchemy as sql
 
-    # the download comes down as a tab delimited file, so \t tells pandas.read_csv that the file is a
-    # a tab delimited file.
-    return fetchData  (url, senate_election_file, sep='\t')
+    engine = sql.create_engine(dbString)
 
+    logging.debug ("Saving dataframe:%s to sql table:%s", df.head(), table)
 
+    df.to_sql (table, engine, if_exists='replace')
 
-if __name__ == "__main__":
+    logging.info ("Saved dataframe to sql table:%s", table)
 
-    logging.getLogger().setLevel(logging.DEBUG)
-
-    fetchSenateElection ()
+    return True
