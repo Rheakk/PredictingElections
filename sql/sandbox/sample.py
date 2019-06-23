@@ -1,8 +1,6 @@
 import logging
-#import psycopg2 as sql
 import sqlalchemy as sql
 import pandas.io.sql as psql
-import pandas as pd
 
 logging.basicConfig(
      level=logging.DEBUG,
@@ -20,17 +18,30 @@ except:
 
 logging.info ("Connected to db:%s", conStr)
 
-for row in engine.execute ("select * from Person"):
-    logging.info ("%r", row)
+sqlStr = '''
+select a.* from state_senate a
+INNER JOIN (
+	select state, max (candidatevotes) maxvotes from state_senate
+	where year = 2018
+	group by state
+) b
+on a.state = b.state and a.candidatevotes = b.maxVotes
+where a.year = 2018
+order by state asc
+'''
 
+# sample of how to read from sql db into python list
+#for row in engine.execute (sqlStr):
+#    logging.info ("%r", row)
 
+# sample of how to read from sql db into pandas df
+df = psql.read_sql (sqlStr, engine)
+logging.info ("%r", df)
 
-df = psql.read_sql ("select * from Person", engine)
-logging.info ("Read Person:\n%r", df)
 
 # save this df in a table by the name pd_person
-df.to_sql ("pd_person", engine, if_exists='replace')
+#df.to_sql ("pd_person", engine, if_exists='replace')
 # read it to see if it worked
-df2 = psql.read_sql ("select * from pd_person", engine)
-logging.info ("Read pd_person:\n%r", df)
+#df2 = psql.read_sql ("select * from pd_person", engine)
+#logging.info ("Read pd_person:\n%r", df)
 
