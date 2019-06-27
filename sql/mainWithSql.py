@@ -38,6 +38,13 @@ def getWinners():
     '''
 
     df = psql.read_sql(max_votes_str, engine)
+
+    for index, row in df.iterrows():
+        cand = str(row['candidate'])
+        df.at[index, 'candidate'] = simplifyNames(cand)
+
+    df = cleanData(df)
+
     df.to_sql("winners", engine, if_exists='replace')
 
     pd.set_option('display.max_columns', 20)
@@ -48,7 +55,7 @@ def getCands():
 
     state_sql_str = '''
         UPDATE state_senate SET candidate = LOWER(candidate);
-        select a.year, a.state, a.candidate, a.candidatevotes, a.state_po from state_senate a
+        select a.year, a.state, a.state_po, a.candidate, a.candidatevotes from state_senate a
         where a.year = 2018
         order by state asc
     '''
@@ -65,6 +72,7 @@ def getCands():
     pd.set_option('display.max_columns', 20)
     pd.set_option('display.max_rows', 200)
 
+    df.to_sql("senate_2018", engine, if_exists='replace')
     return df
 
 def simplifyNames(str):
@@ -159,40 +167,13 @@ def split(list, n):
     for i in range(0, len(list), n):
         yield list[i:i + n]
 
-def getMostSearched():
-
-    merge_str = '''
-        
-        SELECT
-        category, year, week, value, 
-        sum(value) OVER (PARTITION BY category 
-            ORDER BY year, week 
-            ROWS 2 PRECEDING) AS retention_value_3_weeks
-        FROM
-            t 
-        ORDER BY
-            category, year, week ;
-    
-    
-    select a.* from google_search_data a
-    INNER JOIN (
-	    select state, max (candidatevotes) maxvotes from state_senate
-	    where year = 2018
-	    group by state
-    ) b
-    on a.state = b.state and a.candidatevotes = b.maxVotes
-    where a.year = 2018
-    order by state asc   
-    '''
-
-
 
 def main():
 
     #cands = getCands()
     #saveSearchData(cands)
-    organizeSearchData()
-    #getWinners()
+    #organizeSearchData()
+    getWinners()
 
 main()
 
